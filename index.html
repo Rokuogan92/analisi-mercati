@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Analisi Mercati — Screener & Alert</title>
+<style>
+:root{
+  --bg:#0b1220;--panel:#101a2e;--panel2:#0d1526;--border:#1e2a44;--text:#e6edf6;--muted:#8fa3bd;
+  --green:#22c55e;--red:#ef4444;--amber:#f59e0b;--blue:#60a5fa;--cyan:#38bdf8;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:14.5px}
+header{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;padding:10px 16px;background:rgba(11,18,32,.95);border-bottom:1px solid var(--border);backdrop-filter:blur(8px)}
+.logo{display:flex;align-items:center;gap:8px;font-size:16px}
+.logo .sub{color:var(--muted);font-size:11.5px;margin-left:2px}
+.status{font-size:12.5px;color:var(--muted)}
+.status .ok{color:var(--green)}.status .down{color:var(--red)}
+.spacer{flex:1}
+.tabs{display:flex;gap:4px;padding:8px 16px 0;border-bottom:1px solid var(--border);background:var(--panel2);position:sticky;top:50px;z-index:39}
+.tab{background:none;border:1px solid transparent;border-bottom:none;color:var(--muted);padding:9px 16px;border-radius:8px 8px 0 0;cursor:pointer;font-size:14px}
+.tab.active{background:var(--bg);color:var(--text);border-color:var(--border)}
+main{max-width:1240px;margin:0 auto;padding:16px}
+.view{display:none}.view.active{display:block}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.card h3{margin:0 0 10px;font-size:13px;color:var(--cyan);letter-spacing:.4px;text-transform:uppercase}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+@media(max-width:860px){.grid2,.grid3{grid-template-columns:1fr}}
+.muted{color:var(--muted)}.small{font-size:12px}
+.up{color:var(--green)}.down{color:var(--red)}
+.btn{background:#1a2540;border:1px solid #26345a;color:var(--text);padding:7px 13px;border-radius:8px;cursor:pointer;font-size:13.5px;transition:.15s}
+.btn:hover{background:#22315a}
+.btn.primary{background:#2563eb;border-color:#3b82f6}
+.btn.primary:hover{background:#1d4ed8}
+.btn.ghost{background:transparent;border-color:var(--border)}
+.btn.small{padding:4px 9px;font-size:12px}
+.btn:disabled{opacity:.45;cursor:default}
+.badge{background:var(--red);color:#fff;border-radius:10px;font-size:10.5px;padding:1px 6px;margin-left:4px;font-weight:700}
+.hidden{display:none!important}
+.banner{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.5);border-radius:12px;padding:10px 14px;margin-bottom:14px}
+.banner b{color:var(--amber)}
+.banner.hidden{display:none}
+input,select,textarea{background:#0c1425;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13.5px;outline:none}
+input:focus{border-color:var(--blue)}
+textarea{width:100%;resize:vertical;font-family:inherit;line-height:1.5}
+.searchwrap{position:relative;margin-bottom:10px}
+.searchwrap input{width:100%;padding:12px 14px;font-size:15px;border-radius:10px}
+.dropdown{position:absolute;top:100%;left:0;right:0;background:#101a30;border:1px solid var(--border);border-radius:0 0 10px 10px;max-height:320px;overflow:auto;z-index:30;box-shadow:0 12px 30px rgba(0,0,0,.5)}
+.sres{padding:9px 12px;cursor:pointer;display:flex;gap:8px;align-items:baseline;border-bottom:1px solid #16203a}
+.sres:hover{background:#16213c}
+.sres b{color:var(--cyan)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 14px}
+.chip{background:#132039;border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12.5px;cursor:pointer;color:var(--muted)}
+.chip:hover{color:var(--text);border-color:var(--blue)}
+.detail-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.sym-title{font-size:20px;font-weight:700}
+.price-block{text-align:right}
+.big{font-size:26px;font-weight:700}
+.score-card{text-align:center}
+.score-num{font-size:34px;font-weight:800;line-height:1}
+.score-num span{font-size:14px;color:var(--muted);font-weight:500}
+.score-lab{color:var(--muted);font-size:12.5px;margin:6px 0}
+.score-badge{display:inline-block;color:#0b1220;font-weight:700;padding:3px 12px;border-radius:14px;font-size:12.5px}
+.scorebar{height:6px;background:#0c1425;border-radius:4px;margin-top:12px;overflow:hidden}
+.scorebar div{height:100%;border-radius:4px}
+.sigrow{display:flex;gap:10px;padding:8px 2px;border-bottom:1px solid #16213a;align-items:flex-start}
+.sigrow:last-child{border-bottom:none}
+.sig{width:22px;height:22px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex:none;margin-top:2px}
+.sig.ok{background:rgba(34,197,94,.15);color:var(--green)}
+.sig.no{background:rgba(239,68,68,.15);color:var(--red)}
+.sig.mid{background:rgba(148,163,184,.15);color:#94a3b8}
+.pill{background:#0c1425;border:1px solid var(--border);border-radius:10px;padding:1px 7px;font-size:11px;color:var(--cyan)}
+.statrow{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #16213a;font-size:13px;gap:10px}
+.statrow:last-child{border:none}
+.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--border);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:9px 10px;text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel)}
+th.sortable{cursor:pointer}
+th.sortable:hover{color:var(--text)}
+tbody tr{border-bottom:1px solid #141e36;cursor:pointer}
+tbody tr:hover{background:#142040}
+.sc{display:inline-block;min-width:34px;padding:2px 7px;border-radius:8px;font-weight:700;font-size:12px;text-align:center}
+.sc.ok{background:rgba(34,197,94,.16);color:var(--green)}
+.sc.mid{background:rgba(245,158,11,.16);color:var(--amber)}
+.sc.no{background:rgba(239,68,68,.16);color:var(--red)}
+.del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 6px;border-radius:6px}
+.del:hover{color:var(--red);background:rgba(239,68,68,.12)}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.chk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.chk input{width:auto}
+.bulkbox{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.bulkbox textarea{flex:1;min-width:200px}
+.bulkbox .btn{height:38px;white-space:nowrap}
+.progress{height:20px;background:#0c1425;border-radius:8px;position:relative;margin-bottom:12px;overflow:hidden;border:1px solid var(--border)}
+.progress>div{background:linear-gradient(90deg,#2563eb,#38bdf8);height:100%;width:0;transition:width .3s}
+.progress span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11.5px}
+#chartCanvas{width:100%;display:block;cursor:crosshair}
+.chart-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.rng{padding:3px 10px;font-size:12px}
+.rng.active{background:#2563eb;border-color:#3b82f6}
+.al-day{color:var(--cyan);font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin:14px 0 4px}
+.alrow{display:flex;justify-content:space-between;gap:10px;padding:9px 10px;background:#0e1830;border:1px solid #16213a;border-left:3px solid var(--blue);border-radius:10px;margin-bottom:6px}
+.alrow.buy{border-left-color:var(--green)}
+.al-price{font-weight:600;white-space:nowrap}
+.rule{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #16213a;flex-wrap:wrap}
+.rule:last-child{border:none}
+.rule input[type=number]{width:80px;padding:4px 8px}
+.rule .hint{flex-basis:100%;padding-left:30px;color:var(--muted);font-size:11.5px}
+.rule label{flex:1;cursor:pointer}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1c2a4a;border:1px solid var(--blue);padding:10px 18px;border-radius:10px;z-index:99;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+.row{display:flex;align-items:center;gap:10px;margin:10px 0;flex-wrap:wrap}
+.row label{color:var(--muted);font-size:13px}
+.posbar{display:inline-block;width:90px;height:6px;background:#0c1425;border-radius:4px;position:relative;vertical-align:middle;margin-right:6px}
+.posbar span{position:absolute;top:-3px;width:2px;height:12px;background:var(--cyan);border-radius:2px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 17l5-6 4 3 5-8 4 5" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 21h18" stroke="#334b7a" stroke-width="2" stroke-linecap="round"/></svg>
+    <b>Analisi Mercati</b><span class="sub">screener + alert</span>
+  </div>
+  <div id="connStatus" class="status">⏳ Verifica connessione…</div>
+  <button id="btnRetryConn" class="btn ghost small hidden">Riprova</button>
+  <div class="spacer"></div>
+  <button id="btnBell" class="btn ghost" title="Vai agli alert">🔔<span id="alertBadge" class="badge hidden">0</span></button>
+  <button id="btnScanTop" class="btn primary">▶ Scansiona</button>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="analisi">📊 Analisi</button>
+  <button class="tab" data-tab="screener">📡 Screener</button>
+  <button class="tab" data-tab="alerts">🔔 Alert</button>
+  <button class="tab" data-tab="settings">⚙️ Impostazioni</button>
+</nav>
+
+<main>
+  <div id="connBanner" class="banner hidden">
+    <b>Impossibile contattare i canali dati.</b>
+    <span class="small muted">I canali gratuiti possono essere temporaneamente in saturazione. Controlla la connessione a internet, attendi qualche secondo e premi Riprova.</span>
+    <button id="btnRetryBanner" class="btn small">Riprova</button>
+  </div>
+
+  <!-- ============ ANALISI ============ -->
+  <section id="view-analisi" class="view active">
+    <div class="searchwrap">
+      <input id="searchInput" autocomplete="off" placeholder="Cerca un asset: Ferrari, ENI, TSLA, BTC-USD, oro, EUR/USD…">
+      <div id="searchRes" class="dropdown hidden"></div>
+    </div>
+    <div id="recentChips" class="chips"></div>
+    <div id="detail" class="hidden"></div>
+  </section>
+
+  <!-- ============ SCREENER ============ -->
+  <section id="view-screener" class="view">
+    <div class="toolbar">
+      <button id="btnScan" class="btn primary">▶ Scansiona ora</button>
+      <label class="chk"><input type="checkbox" id="autoScanChk"> Automatica</label>
+      <select id="scanEvery">
+        <option value="5">ogni 5 min</option><option value="15">ogni 15 min</option>
+        <option value="30">ogni 30 min</option><option value="60">ogni 60 min</option>
+      </select>
+      <span class="muted small" id="scanStatus">—</span>
+      <div class="spacer"></div>
+      <select id="presetSel"></select>
+      <button id="btnAddPreset" class="btn">+ Preset</button>
+      <button id="btnClearWl" class="btn ghost">Svuota</button>
+    </div>
+
+    <div class="card">
+      <div class="bulkbox">
+        <textarea id="bulkTickers" rows="2" placeholder="Incolla qui i simboli da monitorare: AAPL, MSFT, TSLA, ENEL.MI, BTC-USD…"></textarea>
+        <button id="btnAddBulk" class="btn primary">＋ Aggiungi alla watchlist</button>
+      </div>
+      <div class="muted small" style="margin-top:6px">I simboli si separano con virgole, spazi o accapo. Dopo l'aggiunta premi "Scansiona ora": i nuovi titoli entrano subito nel monitoraggio.</div>
+    </div>
+
+    <div id="scanProgress" class="progress hidden"><div id="scanBar"></div><span id="scanLabel"></span></div>
+    <div id="wlEmpty" class="card hidden">
+      <p class="muted">La watchlist è vuota. Aggiungi titoli dalla ricerca (tab Analisi), incolla una lista qui sopra, oppure carica un preset:</p>
+      <div class="chips" id="emptyPresets"></div>
+    </div>
+    <div class="tablewrap">
+      <table id="scrTable">
+        <thead><tr>
+          <th data-k="sym" class="sortable">Simbolo</th>
+          <th data-k="price" class="sortable">Prezzo</th>
+          <th data-k="day" class="sortable">Oggi</th>
+          <th data-k="short" class="sortable">Breve</th>
+          <th data-k="long" class="sortable">Lungo</th>
+          <th data-k="rsi" class="sortable">RSI</th>
+          <th>Segnale</th><th></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="muted small" style="margin-top:8px">Clicca una riga per l'analisi completa. Durante la scansione il pulsante sopra diventa "■ Stop" per interromperla.</p>
+  </section>
+
+  <!-- ============ ALERT ============ -->
+  <section id="view-alerts" class="view">
+    <div class="grid2">
+      <div class="card">
+        <h3>Regole di segnalazione</h3>
+        <div id="rulesBox"></div>
+        <div class="row"><label for="cooldownH">Non ripetere lo stesso alert prima di:</label><input type="number" id="cooldownH" min="1" max="168"> <span class="muted small">ore</span></div>
+        <div class="muted small">A ogni scansione l'app controlla tutte le regole su tutti i titoli della watchlist e segnala ciò che soddisfa le condizioni, rispettando il cooldown.</div>
+      </div>
+      <div class="card">
+        <h3>Notifiche</h3>
+        <div class="row"><button id="btnPerm" class="btn">🔔 Attiva notifiche del browser</button></div>
+        <div class="row"><label class="chk"><input type="checkbox" id="soundChk"> Suono all'arrivo di un alert</label></div>
+        <div id="permState" class="muted small"></div>
+        <p class="muted small">Per ricevere gli alert lascia questa scheda aperta (puoi ridurla o spostarla in secondo piano): scansioni e notifiche continuano a funzionare. Se apri il file dal desktop e le notifiche non compaiono, ospita la pagina online — vedi Impostazioni.</p>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Cronologia alert</h3>
+      <div class="row"><button id="btnClearAlerts" class="btn ghost small">Pulisci cronologia</button></div>
+      <div id="alertsList"></div>
+    </div>
+  </section>
+
+  <!-- ============ IMPOSTAZIONI ============ -->
+  <section id="view-settings" class="view">
+    <div class="grid2">
+      <div class="card">
+        <h3>Connessione</h3>
+        <div id="setConn"></div>
+        <div class="row"><button id="btnReconn" class="btn">Riprova</button><button id="btnResetProxy" class="btn ghost">Cambia canale dati</button></div>
+        <div class="muted small">I dati arrivano da Yahoo Finance attraverso canali pubblici gratuiti con fallback automatico. Se un canale va in saturazione, l'app prova da sola il successivo.</div>
+      </div>
+      <div class="card">
+        <h3>Scansione</h3>
+        <div class="row"><label for="delaySel">Pausa tra un titolo e l'altro:</label>
+          <select id="delaySel"><option value="600">0,6 s</option><option value="800">0,8 s</option><option value="1200">1,2 s</option><option value="1800">1,8 s</option></select>
+        </div>
+        <div class="muted small">La frequenza della scansione automatica si regola nel tab Screener. Con watchlist molto lunghe tieni la pausa a 0,8 s o più.</div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Backup e ripristino</h3>
+        <div class="row">
+          <button id="btnExport" class="btn">⬇ Esporta configurazione</button>
+          <label class="btn" style="cursor:pointer">⬆ Importa<input id="impFile" type="file" accept="application/json" style="display:none"></label>
+          <button id="btnResetAll" class="btn ghost">Ripristina tutto</button>
+        </div>
+        <div class="muted small">L'esportazione include watchlist, regole e preferenze: comoda per portare la configurazione su un altro PC.</div>
+      </div>
+      <div class="card">
+        <h3>Informazioni</h3>
+        <p class="small muted">Versione 1.2 · Dati: Yahoo Finance (possibili ritardi di quotazione). Le analisi sono di natura tecnica, hanno scopo puramente informativo e non costituiscono consulenza finanziaria né sollecitazione all'investimento.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+'use strict';
+/* =================== utilità =================== */
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function load(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}
+function fmtPrice(v,cur){if(v==null||!isFinite(v))return '—';const a=Math.abs(v);let d=2;if(a<0.01)d=6;else if(a<1)d=4;const s=v.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:d});return cur?s+' '+cur:s;}
+const fmtPct=v=>(v==null||!isFinite(v))?'—':(v>0?'+':'')+v.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+'%';
+function fmtDate(t){return new Date(t).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'2-digit'})}
+const fmtTime=ts=>new Date(ts).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+const baseTitle=document.title;
+let stopRequested=false, searchActive=0, connCheckRunning=false;
+
+/* =================== stato =================== */
+const state={
+  cache:new Map(),watchlist:[],rules:null,alerts:[],cooldown:{},settings:null,recenti:[],
+  screenerData:{},detail:null,range:'6M',cross:-1,proxyIdx:null,sortKey:'short',sortDir:-1,
+  unread:0,scan:{running:false,done:0,total:0,last:0,stopped:false},ticker:null
+};
+
+const PRESETS={
+  'Azioni Borsa Italiana (MIB)':['ENI.MI','ENEL.MI','ISP.MI','UCG.MI','STLAM.MI','FBK.MI','G.MI','RACE.MI','TIT.MI','LDO.MI','MB.MI','PIRC.MI','TRN.MI','BAMI.MI','BPSO.MI','SRG.MI','EXO.MI','MONC.MI','IPG.MI','A2A.MI','EC.MI','PG.MI','NEXI.MI','CPR.MI','BZU.MI','PST.MI','ELN.MI','INW.MI','LTM.MI','VOL.MI','BMED.MI','DIA.MI','ANIM.MI','CUBE.MI','TOD.MI','BRE.MI','AZM.MI','IG.MI','IP.MI','REC.MI'],
+  'Mega-cap USA':['AAPL','MSFT','NVDA','GOOGL','AMZN','META','TSLA','AVGO','BRK-B','JPM','V','UNH','XOM','MA','PG','COST','HD','JNJ','WMT','ORCL','MRK','ABBV','CVX','KO','PEP','ADBE','CRM','NFLX','AMD','INTC','DIS','BA','NKE','MCD','T','VZ','PFE','CSCO','QCOM','TXN','IBM','GE','CAT','GS','MS','F','UBER','PLTR','COIN','SNOW'],
+  'Criptovalute':['BTC-USD','ETH-USD','SOL-USD','BNB-USD','XRP-USD','ADA-USD','DOGE-USD','AVAX-USD','LINK-USD','DOT-USD','LTC-USD','BCH-USD'],
+  'ETF e fondi indicizzati':['SWDA.MI','EIMI.MI','CSPX.L','VWCE.DE','SPY','QQQ','VOO','VT','IWM','EEM','GLD','SLV','TLT','HYG'],
+  'Indici, valute e materie prime':['^GSPC','^FTSEMIB.MI','^DJI','^IXIC','^GDAXI','^FCHI','^N225','^STOXX50E','^VIX','GC=F','SI=F','CL=F','NG=F','EURUSD=X','GBPUSD=X','USDCHF=X','EURJPY=X','EURGBP=X']
+};
+const DEFAULT_WL=['ENEL.MI','ENI.MI','ISP.MI','UCG.MI','STLAM.MI','G.MI','TIT.MI','LDO.MI','AAPL','MSFT','NVDA','TSLA','BTC-USD','ETH-USD','GC=F','EURUSD=X','^GSPC','^FTSEMIB.MI','SPY','SWDA.MI'];
+
+const RULE_DEFS=[
+  {k:'shortScore',label:'Punteggio breve periodo ≥',type:'num',key:'thr',min:0,max:100,def:70,hint:'Momentum tecnico forte su giorni/settimane'},
+  {k:'longScore',label:'Punteggio lungo periodo ≥',type:'num',key:'thr',min:0,max:100,def:65,hint:'Trend di fondo sano'},
+  {k:'rsiLow',label:'RSI (14) sotto',type:'num',key:'thr',min:1,max:49,def:30,hint:'Sovenduto: storicamente zona di possibile rimbalzo'},
+  {k:'macdCross',label:'MACD incrocio rialzista (ultime 3 sedute)',type:'bool',hint:'La linea MACD supera la linea di segnale'},
+  {k:'goldenCross',label:'Golden cross recente (ultime 10 sedute)',type:'bool',hint:'La media a 50 sedute supera quella a 200'},
+  {k:'high52',label:'Nuovo massimo a 52 settimane',type:'bool',hint:'Chiusura sopra il massimo dell\'ultimo anno'},
+  {k:'volSpike',label:'Volumi oltre',type:'num',key:'mult',min:1.1,max:10,step:0.1,def:2.5,suffix:'× la media di 20 sedute',hint:'Interesse anomalo sul titolo'},
+  {k:'bbLow',label:'Prezzo sotto la banda di Bollinger inferiore',type:'bool',hint:'Eccesso statistico in vendita'},
+  {k:'dipDay',label:'Caduta giornaliera ≥',type:'num',key:'pct',min:1,max:30,def:4,suffix:'%',defOn:false,hint:'Possibile occasione sui ribassi'}
+];
+const RULE_LABELS=Object.fromEntries(RULE_DEFS.map(d=>[d.k,d.label.replace(/ ≥| oltre| sotto.*/,'')]));
+function defaultRules(){const R={cooldownH:12};for(const d of RULE_DEFS){R[d.k]={on:d.defOn!==false};if(d.def!=null)R[d.k][d.key]=d.def;}return R;}
+
+/* =================== rete =================== */
+const isFile=location.protocol==='file:';
+const PROXIES=[
+  {id:'canale diretto',wrap:u=>u},
+  {id:'corsproxy.io',wrap:u=>'https://corsproxy.io/?url='+encodeURIComponent(u)},
+  {id:'AllOrigins',wrap:u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u)},
+  {id:'CodeTabs',wrap:u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u)}
+];
+const PROXY_ORDER=isFile?[1,2,3]:[0,1,2,3];
+
+/* Timeout robusto: usa AbortSignal.timeout se disponibile, altrimenti AbortController */
+function timeoutSignal(ms){
+  try{
+    if(typeof AbortSignal!=='undefined'&&typeof AbortSignal.timeout==='function'){
+      return AbortSignal.timeout(ms);
+    }
+  }catch(e){}
+  try{
+    if(typeof AbortController!=='undefined'){
+      const c=new AbortController();
+      setTimeout(()=>{try{c.abort()}catch(e){}},ms);
+      return c.signal;
+    }
+  }catch(e){}
+  return undefined;
+}
+
+async function fetchJSON(url,timeout=9000,totalBudget=22000){
+  const started=Date.now();
+  const tried=new Set();
+  let lastErr=null;
+  const base=state.proxyIdx!=null?[state.proxyIdx,...PROXY_ORDER.filter(i=>i!==state.proxyIdx)]:[...PROXY_ORDER];
+  for(const i of base){
+    if(tried.has(i))continue;
+    if(Date.now()-started>totalBudget){lastErr=lastErr||new Error('Timeout totale superato');break;}
+    tried.add(i);
+    try{
+      const res=await fetch(PROXIES[i].wrap(url),{signal:timeoutSignal(timeout)});
+      if(res.status===429||res.status===503){lastErr=new Error('Limite di richieste raggiunto');continue;}
+      if(!res.ok)throw new Error('HTTP '+res.status);
+      const j=await res.json();
+      if(state.proxyIdx!==i){state.proxyIdx=i;save('am_proxy',i);}
+      return j;
+    }catch(e){lastErr=e;}
+  }
+  throw lastErr||new Error('Connessione non riuscita');
+}
+
+async function fetchChart(symbol,range='2y',interval='1d',force=false){
+  const key=symbol+'|'+range+'|'+interval,now=Date.now();
+  const ttl=interval==='1d'?10*60*1000:60*1000;
+  const c=state.cache.get(key);
+  if(!force&&c&&now-c.t<ttl)return c.data;
+  const u=`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}&includePrePost=false`;
+  const j=await fetchJSON(u);
+  const r=j&&j.chart&&Array.isArray(j.chart.result)?j.chart.result[0]:null;
+  if(!r||!r.meta)throw new Error('Dati non disponibili');
+  state.cache.set(key,{t:now,data:r});
+  return r;
+}
+
+/* Warm-up parallelo: prova tutti i canali insieme, vince il primo che risponde.
+   Ritorna true appena un canale risponde correttamente, false se tutti falliscono entro il timeout. */
+function warmUp(timeout=9000){
+  return new Promise(resolve=>{
+    const url='https://query1.finance.yahoo.com/v8/finance/chart/AAPL?range=1d&interval=1d';
+    let pending=PROXY_ORDER.length, done=false;
+    const finish=(ok,i)=>{
+      if(done)return;
+      if(ok){
+        done=true;state.proxyIdx=i;save('am_proxy',i);resolve(true);
+      }else{
+        pending--;
+        if(pending===0){done=true;resolve(false);}
+      }
+    };
+    PROXY_ORDER.forEach(i=>{
+      fetch(PROXIES[i].wrap(url),{signal:timeoutSignal(timeout)})
+        .then(res=>{if(!res.ok)throw new Error('HTTP '+res.status);return res.json()})
+        .then(j=>{
+          if(j&&j.chart&&j.chart.result&&j.chart.result[0])finish(true,i);
+          else finish(false,i);
+        })
+        .catch(()=>finish(false,i));
+    });
+  });
+}
+
+/* =================== indicatori =================== */
+function smaArr(a,n){const o=new Array(a.length).fill(null);let s=0;for(let i=0;i<a.length;i++){s+=a[i];if(i>=n)s-=a[i-n];if(i>=n-1)o[i]=s/n;}return o;}
+function emaArr(a,n){const o=new Array(a.length).fill(null);const k=2/(n+1);let p=null;
+  for(let i=0;i<a.length;i++){
+    if(i===n-1){let s=0;for(let j=0;j<n;j++)s+=a[j];p=s/n;o[i]=p;}
+    else if(i>n&&p!=null){p=a[i]*k+p*(1-k);o[i]=p;}
+  }return o;}
+function rsiArr(c,n=14){const o=new Array(c.length).fill(null);let g=0,l=0;
+  for(let i=1;i<c.length;i++){const d=c[i]-c[i-1],up=d>0?d:0,dn=d<0?-d:0;
+    if(i<=n){g+=up;l+=dn;if(i===n){g/=n;l/=n;o[i]=l===0?100:100-100/(1+g/l);}}
+    else{g=(g*(n-1)+up)/n;l=(l*(n-1)+dn)/n;o[i]=l===0?100:100-100/(1+g/l);}
+  }return o;}
+function tailEma(a,n){const f=a.findIndex(v=>v!=null);if(f<0)return a.map(()=>null);
+  const e=emaArr(a.slice(f),n),o=new Array(a.length).fill(null);
+  for(let i=0;i<e.length;i++)o[f+i]=e[i];return o;}
+function tailSma(a,n){const f=a.findIndex(v=>v!=null);if(f<0)return a.map(()=>null);
+  const s=smaArr(a.slice(f),n),o=new Array(a.length).fill(null);
+  for(let i=0;i<s.length;i++)o[f+i]=s[i];return o;}
+function macdCalc(c){const ef=emaArr(c,12),es=emaArr(c,26);
+  const line=c.map((_,i)=>ef[i]!=null&&es[i]!=null?ef[i]-es[i]:null);
+  const sig=tailEma(line,9);
+  const hist=line.map((v,i)=>v!=null&&sig[i]!=null?v-sig[i]:null);
+  return{macd:line,signal:sig,hist};}
+function bollCalc(c,n=20,k=2){const mid=smaArr(c,n),up=[],lo=[];
+  for(let i=0;i<c.length;i++){
+    if(i<n-1){up.push(null);lo.push(null);continue;}
+    let s=0,s2=0;for(let j=i-n+1;j<=i;j++){s+=c[j];s2+=c[j]*c[j];}
+    const mu=s/n,sd=Math.sqrt(Math.max(s2/n-mu*mu,0));
+    up.push(mu+k*sd);lo.push(mu-k*sd);
+  }return{bbM:mid,bbU:up,bbL:lo};}
+function stochCalc(rows,n=14,d=3){const K=new Array(rows.length).fill(null);
+  for(let i=n-1;i<rows.length;i++){
+    let hh=-Infinity,ll=Infinity;
+    for(let j=i-n+1;j<=i;j++){hh=Math.max(hh,rows[j].h);ll=Math.min(ll,rows[j].l);}
+    const r=hh-ll;K[i]=r>0?100*(rows[i].c-ll)/r:50;}
+  return{k:K,d:tailSma(K,d)};}
+function atrCalc(rows,n=14){const o=new Array(rows.length).fill(null);let a=0;
+  for(let i=1;i<rows.length;i++){
+    const tr=Math.max(rows[i].h-rows[i].l,Math.abs(rows[i].h-rows[i-1].c),Math.abs(rows[i].l-rows[i-1].c));
+    if(i<=n){a+=tr;if(i===n){a/=n;o[i]=a;}}
+    else{a=(a*(n-1)+tr)/n;o[i]=a;}
+  }return o;}
+function stdev(a){if(a.length<2)return 0;const m=a.reduce((x,y)=>x+y,0)/a.length;
+  return Math.sqrt(a.reduce((s,v)=>s+(v-m)*(v-m),0)/(a.length-1));}
+function maxDD(closes){let peak=-Infinity,dd=0;for(const c of closes){peak=Math.max(peak,c);dd=Math.min(dd,c/peak-1);}return dd*100;}
+function calcLevels(rows){
+  const look=Math.min(126,rows.length),arr=rows.slice(-look),c=arr[arr.length-1].c,w=4;
+  const sh=[],sl=[];
+  for(let i=w;i<arr.length-w;i++){
+    const wh=arr.slice(i-w,i+w+1).map(r=>r.h),wl=arr.slice(i-w,i+w+1).map(r=>r.l);
+    if(arr[i].h>=Math.max(...wh))sh.push(arr[i].h);
+    if(arr[i].l<=Math.min(...wl))sl.push(arr[i].l);
+  }
+  function clus(list){const s=[...list].sort((a,b)=>a-b),g=[];
+    for(const v of s){if(g.length&&Math.abs(v/g[g.length-1][g[g.length-1].length-1]-1)<0.015)g[g.length-1].push(v);else g.push([v]);}
+    return g.map(x=>({p:x.reduce((a,b)=>a+b,0)/x.length}));}
+  return{res:clus(sh).filter(o=>o.p>c).slice(0,2),sup:clus(sl).filter(o=>o.p<c).slice(-2),c};
+}
+
+/* =================== analisi e punteggi =================== */
+function analyze(res){
+  const ts=res.timestamp||[];
+  const q=(res.indicators&&res.indicators.quote&&res.indicators.quote[0])||{};
+  const rows=[];
+  for(let i=0;i<ts.length;i++){
+    const c=q.close&&q.close[i];if(c==null)continue;
+    rows.push({t:ts[i]*1000,
+      o:q.open&&q.open[i]!=null?q.open[i]:c,
+      h:q.high&&q.high[i]!=null?q.high[i]:c,
+      l:q.low&&q.low[i]!=null?q.low[i]:c,
+      c,v:q.volume&&q.volume[i]?q.volume[i]:0});
+  }
+  const meta=res.meta||{};
+  if(rows.length<30)throw new Error('Storico insufficiente');
+  const closes=rows.map(r=>r.c),highs=rows.map(r=>r.h),lows=rows.map(r=>r.l),vols=rows.map(r=>r.v);
+  const n=closes.length,last=closes[n-1];
+  const ind=Object.assign(
+    {sma50:smaArr(closes,50),sma200:smaArr(closes,200),ema20:emaArr(closes,20),rsi:rsiArr(closes,14),close:closes,high:highs,low:lows,vol:vols},
+    macdCalc(closes),bollCalc(closes,20,2),stochCalc(rows,14,3),{atr:atrCalc(rows,14)});
+  const retAt=k=>n>k+1?(last/closes[n-1-k]-1)*100:null;
+  const year=new Date().getFullYear();
+  const yi=closes.findIndex((_,idx)=>new Date(rows[idx].t).getFullYear()===year);
+  const ytd=yi>0?(last/closes[yi-1]-1)*100:null;
+  const rets=[];
+  for(let i=Math.max(1,n-60);i<n;i++)rets.push(Math.log(closes[i]/closes[i-1]));
+  const volAnn=rets.length>10?stdev(rets)*Math.sqrt(252)*100:null;
+  const per=Math.min(n,252);let h52=-Infinity,l52=Infinity;
+  for(let i=n-per;i<n;i++){h52=Math.max(h52,highs[i]);l52=Math.min(l52,lows[i]);}
+  const stats={
+    price:meta.regularMarketPrice!=null?meta.regularMarketPrice:last,
+    dayPct:n>1?(last/closes[n-2]-1)*100:null,
+    ret5:retAt(5),ret21:retAt(21),ret63:retAt(63),ret126:retAt(126),ret252:retAt(252),ytd,
+    volAnn,atrPct:ind.atr[n-1]!=null?ind.atr[n-1]/last*100:null,
+    maxDD1y:maxDD(closes.slice(-252)),dd3y:maxDD(closes.slice(-756)),
+    h52,l52,pos52:isFinite(h52)&&h52>l52?(last-l52)/(h52-l52)*100:null,
+    dist52:(last/h52-1)*100,
+    avgVol20:vols.slice(-20).reduce((a,b)=>a+b,0)/Math.min(20,n)
+  };
+  return{meta,rows,ind,stats,short:scoreShort(rows,ind),long:scoreLong(rows,ind,stats),levels:calcLevels(rows)};
+}
+
+function scoreShort(rows,ind){
+  const i=rows.length-1,c=rows[i].c,P=[];
+  const r=ind.rsi[i];let s=50,t='RSI non disponibile',v=null;
+  if(r!=null){v=r.toFixed(1);
+    if(r<30){s=82;t='Sovenduto: zona in cui storicamente i ribassi si esauriscono';}
+    else if(r<45){s=63;t='Zona bassa: ampio spazio prima delle aree calde';}
+    else if(r<=60){s=50;t='Zona neutra';}
+    else if(r<72){s=40;t='Zona alta: slancio presente ma margine ridotto';}
+    else{s=24;t='Ipercomprato: rischio di storno';}}
+  P.push({label:'RSI (14 sedute)',v,s,w:1.2,txt:t});
+  {const m=ind.macd[i],sg=ind.signal[i],h=ind.hist[i],hp=ind.hist[i-1];let s2=50,t2='—',v2=null;
+   if(m!=null&&sg!=null){const above=m>sg,rising=h!=null&&hp!=null?h>hp:null;v2=(m-sg>=0?'+':'')+(m-sg).toFixed(3);
+    if(above&&rising===true){s2=85;t2='MACD sopra il segnale e in rafforzamento: slancio positivo';}
+    else if(above){s2=68;t2='MACD sopra il segnale: breve periodo favorevole';}
+    else if(rising===false){s2=25;t2='MACD sotto il segnale e in peggioramento';}
+    else{s2=38;t2='MACD sotto il segnale: debolezza di breve';}}
+   P.push({label:'MACD (12-26-9)',v:v2,s:s2,w:1.3,txt:t2});}
+  {const e=ind.ema20[i],ep=ind.ema20[i-6];let s2=50,t2='—',v2=null;
+   if(e!=null){const above=c>e,rising=ep!=null?e>ep:true,vd=(c/e-1)*100;v2=(vd>=0?'+':'')+vd.toFixed(1)+'%';
+    if(above&&rising){s2=78;t2='Prezzo sopra la media a 20 sedute, che è in salita';}
+    else if(above){s2=62;t2='Prezzo sopra la media a 20 sedute';}
+    else if(rising){s2=48;t2='Prezzo sotto la media a 20 sedute, ma la media risale';}
+    else{s2=30;t2='Prezzo sotto la media a 20 sedute in discesa';}}
+   P.push({label:'Trend media 20 sedute',v:v2,s:s2,w:1.0,txt:t2});}
+  {const u=ind.bbU[i],l=ind.bbL[i];let s2=50,t2='—',v2=null;
+   if(u!=null&&l!=null&&u>l){const pb=(c-l)/(u-l);v2=Math.round(pb*100)+'%';
+    if(pb<0){s2=80;t2='Sotto la banda inferiore: estremo statistico in vendita';}
+    else if(pb<0.25){s2=64;t2='Vicino alla banda inferiore';}
+    else if(pb<=0.75){s2=50;t2='Nella parte centrale del canale';}
+    else if(pb<=1){s2=38;t2='Vicino alla banda superiore: cautela';}
+    else{s2=26;t2='Sopra la banda superiore: estremo statistico';}}
+   P.push({label:'Bande di Bollinger (20; ±2 dev. st.)',v:v2,s:s2,w:0.8,txt:t2});}
+  {const k=ind.k[i],d=ind.d[i];let s2=50,t2='—',v2=null;
+   if(k!=null){v2=Math.round(k);
+    if(k<20&&k>d){s2=82;t2='Stocastico ai minimi e già in risalita';}
+    else if(k<20){s2=64;t2='Stocastico ai minimi';}
+    else if(k>80){s2=30;t2='Stocastico ai massimi: cautela';}
+    else{s2=52;t2='Stocastico in zona intermedia';}}
+   P.push({label:'Stocastico (14-3)',v:v2,s:s2,w:0.8,txt:t2});}
+  {let s2=50,t2='—',v2=null;
+   const vs=rows.slice(-5).map(x=>x.v||0),vp=rows.slice(-25,-5).map(x=>x.v||0);
+   const mv=vs.reduce((a,b)=>a+b,0)/5,mp=vp.length?vp.reduce((a,b)=>a+b,0)/vp.length:0;
+   const mom5=rows.length>5?(c/rows[i-5].c-1)*100:0;
+   if(mv>0&&mp>0){const ratio=mv/mp;v2='×'+ratio.toFixed(2);
+    if(ratio>1.4&&mom5>0){s2=72;t2='Volumi in crescita sul rialzo: compratori convinti';}
+    else if(ratio>1.4){s2=32;t2='Volumi in crescita sul ribasso: pressione di vendita';}
+    else{s2=50;t2='Volumi nella norma';}}
+   else{t2='Volumi non disponibili per questo strumento';}
+   P.push({label:'Volumi (5g vs 20g)',v:v2,s:s2,w:0.7,txt:t2});}
+  {const mom=rows.length>21?(c/rows[i-21].c-1)*100:null;let s2=50,t2='—',v2=null;
+   if(mom!=null){v2=fmtPct(mom);
+    if(mom>6){s2=74;t2='Forte slancio dell\'ultimo mese';}
+    else if(mom>0){s2=58;t2='Ultimo mese in lieve crescita';}
+    else if(mom>-6){s2=44;t2='Ultimo mese tiepido';}
+    else{s2=30;t2='Ultimo mese in discesa';}}
+   P.push({label:'Slancio 1 mese',v:v2,s:s2,w:1.0,txt:t2});}
+  const ws=P.reduce((a,p)=>a+p.w,0);
+  return{score:P.reduce((a,p)=>a+p.s*p.w,0)/ws,parts:P};
+}
+
+function scoreLong(rows,ind,stats){
+  const i=rows.length-1,c=rows[i].c,P=[];
+  {const s2=ind.sma200[i];let sc=50,t='—',v=null;
+   if(s2!=null){const d=(c/s2-1)*100;v=fmtPct(d);
+    if(d>15){sc=82;t='Molto sopra la media a 200 sedute: trend rialzista maturo';}
+    else if(d>0){sc=68;t='Sopra la media a 200 sedute: trend di fondo positivo';}
+    else if(d>-3){sc=48;t='Intorno alla media a 200 sedute: fase decisiva';}
+    else if(d>-15){sc=32;t='Sotto la media a 200 sedute: fondo debole';}
+    else{sc=22;t='Molto sotto la media a 200 sedute: trend ribassista';}}
+   else{t='Storico insufficiente per la media a 200';}
+   P.push({label:'Prezzo vs media 200 sedute',v,s:sc,w:1.4,txt:t});}
+  {const p5=ind.sma50[i],p2=ind.sma200[i];let sc=50,t='—',v=null;
+   if(p5!=null&&p2!=null){const above=p5>p2;let crossDir=null;
+    for(let j=Math.max(200,i-30);j<=i;j++){
+      const a1=ind.sma50[j-1],b1=ind.sma50[j],a2=ind.sma200[j-1],b2=ind.sma200[j];
+      if(a1!=null&&b1!=null&&a2!=null&&b2!=null&&((a1<=a2&&b1>b2)||(a1>=a2&&b1<b2)))crossDir=b1>b2?'golden':'death';}
+    v=above?'50 > 200':'50 < 200';
+    if(crossDir==='golden'){sc=88;t='Golden cross appena avvenuta: svolta del trend di fondo';}
+    else if(above){sc=72;t='Configurazione rialzista: media 50 sopra la 200';}
+    else if(crossDir==='death'){sc=28;t='Death cross: indebolimento di lungo periodo';}
+    else{sc=34;t='Configurazione ribassista: media 50 sotto la 200';}}
+   P.push({label:'Incrocio medie 50/200',v,s:sc,w:1.2,txt:t});}
+  {const r6=stats.ret126;let sc=50,t='—',v=null;
+   if(r6!=null){v=fmtPct(r6);
+    if(r6>15){sc=80;t='Sei mesi molto positivi';}
+    else if(r6>0){sc=62;t='Sei mesi positivi';}
+    else if(r6>-10){sc=44;t='Sei mesi deboli';}
+    else{sc=28;t='Sei mesi in perdita';}}
+   P.push({label:'Rendimento 6 mesi',v,s:sc,w:1.0,txt:t});}
+  {const r12=stats.ret252;let sc=50,t='—',v=null;
+   if(r12!=null){v=fmtPct(r12);
+    if(r12>20){sc=80;t='Ultimi 12 mesi molto positivi';}
+    else if(r12>5){sc=66;t='Ultimi 12 mesi positivi';}
+    else if(r12>-5){sc=48;t='Ultimi 12 mesi in sostanziale pareggio';}
+    else{sc=30;t='Ultimi 12 mesi in perdita';}}
+   P.push({label:'Rendimento 12 mesi',v,s:sc,w:1.0,txt:t});}
+  {const d=stats.dist52;let sc=50,t='—',v=null;
+   if(d!=null&&isFinite(d)){v=fmtPct(d);
+    if(d>-5){sc=78;t='Ai massimi di un anno: forte';}
+    else if(d>-15){sc=64;t='Moderatamente sotto i massimi';}
+    else if(d>-30){sc=46;t='Distante dai massimi';}
+    else{sc=30;t='Molto sotto i massimi: contesto fragile';}}
+   P.push({label:'Distanza dal max 52 settimane',v,s:sc,w:0.8,txt:t});}
+  {const v2=stats.volAnn;let sc=50,t='—',vv=null;
+   if(v2!=null){vv=v2.toFixed(0)+'%';
+    if(v2<15){sc=78;t='Volatilità bassa: andamento ordinato';}
+    else if(v2<25){sc=64;t='Volatilità normale';}
+    else if(v2<40){sc=46;t='Volatilità elevata';}
+    else{sc=30;t='Volatilità molto elevata: rischio alto';}}
+   P.push({label:'Volatilità annualizzata',v:vv,s:sc,w:0.8,txt:t});}
+  {const dd=stats.dd3y;let sc=50,t='—',v=null;
+   if(dd!=null){v=fmtPct(dd);
+    if(dd>-20){sc=76;t='Discese massime contenute in 3 anni';}
+    else if(dd>-35){sc=60;t='Discese importanti ma non estreme';}
+    else if(dd>-50){sc=44;t='Discese profonde nel periodo';}
+    else{sc=28;t='Storia molto turbolenta: perdite oltre il -50%';}}
+   P.push({label:'Discesa massima (3 anni)',v,s:sc,w:0.6,txt:t});}
+  const ws=P.reduce((a,p)=>a+p.w,0);
+  return{score:P.reduce((a,p)=>a+p.s*p.w,0)/ws,parts:P};
+}
+
+const scoreLabel=s=>s>=75?'Molto favorevole':s>=60?'Favorevole':s>=40?'Neutro':s>=25?'Sfavorevole':'Molto sfavorevole';
+const scoreColor=s=>s>=65?'var(--green)':s>=45?'var(--amber)':'var(--red)';
+
+/* =================== grafico =================== */
+const CP={padL:8,padR:64,padT:24,padB:16};
+function rangeCount(a){const n=a.rows.length,m={'1M':21,'3M':63,'6M':126,'1A':252,'2A':504,'5A':n};return Math.min(m[state.range]||126,n);}
+function drawChart(){
+  const a=state.detail,cv=$('#chartCanvas');if(!a||!cv)return;
+  const count=rangeCount(a);if(count<2)return;
+  const start=a.rows.length-count,rows=a.rows.slice(start),cur=a.meta.currency||'';
+  const dpr=window.devicePixelRatio||1;
+  const W=Math.max(cv.clientWidth,320),H=540;
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
+  const{padL,padR,padT}=CP;const xw=W-padL-padR,idxW=xw/count;
+  const X=i=>padL+(i+0.5)*idxW;
+  const pB=Math.round(H*0.52),pT=padT;
+  const vT=pB+8,vB=vT+Math.round(H*0.10);
+  const rT=vB+10,rB=rT+Math.round(H*0.13);
+  const mT=rB+10,mB=H-28;
+  let hi=-Infinity,lo=Infinity;
+  for(const r of rows){lo=Math.min(lo,r.l);hi=Math.max(hi,r.h);}
+  const ckBB=$('#ckBB')&&$('#ckBB').checked,ckSMA=$('#ckSMA')&&$('#ckSMA').checked;
+  if(ckBB)for(let i=0;i<count;i++){const u=a.ind.bbU[start+i],l=a.ind.bbL[start+i];if(u!=null)hi=Math.max(hi,u);if(l!=null)lo=Math.min(lo,l);}
+  let span=hi-lo;if(span<=0)span=Math.abs(hi)*0.02||1;
+  hi+=span*0.05;lo-=span*0.05;
+  const Y=v=>pT+(pB-pT)*(1-(v-lo)/(hi-lo));
+  ctx.font='11px system-ui';ctx.textBaseline='middle';
+  const pdec=span>400?0:span>40?1:span>4?2:span>0.4?3:5;
+  for(let g=0;g<=4;g++){const v=lo+(hi-lo)*g/4,y=Y(v);
+    ctx.strokeStyle='#1a2440';ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(padL+xw,y);ctx.stroke();
+    ctx.fillStyle='#7f93b2';ctx.textAlign='left';ctx.fillText(v.toLocaleString('it-IT',{maximumFractionDigits:pdec}),padL+xw+6,y);}
+  function line(arr,color,w,yf,dash){ctx.beginPath();let st=false;
+    for(let i=0;i<count;i++){const v=arr[start+i];
+      if(v==null||!isFinite(v)){st=false;continue;}
+      const x=X(i),y=yf(v);if(!st){ctx.moveTo(x,y);st=true;}else ctx.lineTo(x,y);}
+    ctx.strokeStyle=color;ctx.lineWidth=w;ctx.setLineDash(dash||[]);ctx.stroke();ctx.setLineDash([]);}
+  const bw=Math.max(idxW*0.7,1.5);
+  if(ckBB){ctx.beginPath();let st=false;
+    for(let i=0;i<count;i++){const v=a.ind.bbU[start+i];if(v==null)continue;const x=X(i),y=Y(v);st?ctx.lineTo(x,y):(ctx.moveTo(x,y),st=true);}
+    for(let i=count-1;i>=0;i--){const v=a.ind.bbL[start+i];if(v==null)continue;ctx.lineTo(X(i),Y(v));}
+    ctx.closePath();ctx.fillStyle='rgba(96,165,250,.09)';ctx.fill();
+    line(a.ind.bbU,'rgba(96,165,250,.5)',1,Y);line(a.ind.bbL,'rgba(96,165,250,.5)',1,Y);}
+  const closeLine=()=>{ctx.beginPath();for(let i=0;i<count;i++){const x=X(i),y=Y(rows[i].c);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}};
+  closeLine();ctx.lineTo(X(count-1),pB);ctx.lineTo(X(0),pB);ctx.closePath();
+  const gr=ctx.createLinearGradient(0,pT,0,pB);gr.addColorStop(0,'rgba(56,189,248,.16)');gr.addColorStop(1,'rgba(56,189,248,0)');ctx.fillStyle=gr;ctx.fill();
+  closeLine();ctx.strokeStyle='#7dd3fc';ctx.lineWidth=1.8;ctx.stroke();
+  if(ckSMA){line(a.ind.sma50,'#f59e0b',1.4,Y);line(a.ind.sma200,'#38bdf8',1.4,Y);}
+  let vmax=0;for(let i=0;i<count;i++)vmax=Math.max(vmax,rows[i].v||0);
+  if(vmax>0){for(let i=0;i<count;i++){const v=rows[i].v||0;if(!v)continue;
+    const h2=v/vmax*(vB-vT),up=i>0?rows[i].c>=rows[i-1].c:true;
+    ctx.fillStyle=up?'rgba(34,197,94,.4)':'rgba(239,68,68,.4)';
+    ctx.fillRect(X(i)-bw/2,vB-h2,bw,h2);}
+    ctx.fillStyle='#7f93b2';ctx.textAlign='left';ctx.fillText('VOL',padL+2,vT+8);}
+  const ry=v=>rB-(rB-rT)*clamp(v,0,100)/100;
+  [30,70].forEach(t=>{const y=ry(t);ctx.strokeStyle='#233150';ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(padL+xw,y);ctx.stroke();ctx.setLineDash([]);});
+  line(a.ind.rsi,'#f59e0b',1.5,ry);
+  ctx.fillStyle='#7f93b2';ctx.textAlign='left';ctx.fillText('RSI 14',padL+2,rT+8);
+  const rl=a.ind.rsi[start+count-1];
+  if(rl!=null){ctx.textAlign='right';ctx.fillText(rl.toFixed(1),padL+xw,rT+8);}
+  let mm=0;for(let i=0;i<count;i++)[a.ind.macd[start+i],a.ind.signal[start+i],a.ind.hist[start+i]].forEach(v=>{if(v!=null)mm=Math.max(mm,Math.abs(v));});
+  if(mm>0){const my=v=>mB-((mB-mT)/2)*(v/mm+1);
+    for(let i=0;i<count;i++){const h=a.ind.hist[start+i];if(h==null)continue;
+      const y0=my(0),y1=my(h);ctx.fillStyle=h>=0?'rgba(34,197,94,.45)':'rgba(239,68,68,.45)';
+      ctx.fillRect(X(i)-bw/2,Math.min(y0,y1),bw,Math.max(Math.abs(y1-y0),1));}
+    line(a.ind.macd,'#60a5fa',1.4,my);line(a.ind.signal,'#f59e0b',1.4,my);
+    ctx.fillStyle='#7f93b2';ctx.textAlign='left';ctx.fillText('MACD 12-26-9',padL+2,mT+8);}
+  ctx.fillStyle='#7f93b2';ctx.textAlign='center';
+  const tl=Math.min(8,count);
+  for(let k=0;k<tl;k++){const i=Math.round(k*(count-1)/Math.max(tl-1,1));ctx.fillText(fmtDate(rows[i].t),X(i),H-10);}
+  if(state.cross>=start){const i=state.cross-start;
+    if(i>=0&&i<count){const x=X(i);
+      ctx.strokeStyle='rgba(230,237,246,.4)';ctx.beginPath();ctx.moveTo(x,pT);ctx.lineTo(x,mB);ctx.stroke();
+      const r=rows[i],rs=a.ind.rsi[state.cross],ml=a.ind.macd[state.cross],sg=a.ind.signal[state.cross];
+      const l1=`${fmtDate(r.t)}   C ${fmtPrice(r.c,cur)}   O ${fmtPrice(r.o,cur)}   H ${fmtPrice(r.h,cur)}   L ${fmtPrice(r.l,cur)}`;
+      const l2=`VOL ${r.v?Math.round(r.v).toLocaleString('it-IT'):'—'}    RSI ${rs!=null?rs.toFixed(1):'—'}    MACD ${ml!=null&&sg!=null?(ml-sg).toFixed(3):'—'}`;
+      ctx.font='11px system-ui';
+      const w2=Math.max(ctx.measureText(l1).width,ctx.measureText(l2).width)+16;
+      const bx=clamp(x+8,padL,W-padR-w2),by=pT-4;
+      ctx.fillStyle='rgba(10,16,30,.94)';ctx.strokeStyle='#26345a';
+      ctx.beginPath();
+      if(ctx.roundRect)ctx.roundRect(bx,by,w2,40,8);else ctx.rect(bx,by,w2,40);
+      ctx.fill();ctx.stroke();
+      ctx.fillStyle='#e6edf6';ctx.textAlign='left';
+      ctx.fillText(l1,bx+8,by+12);ctx.fillText(l2,bx+8,by+28);}}
+}
+function chartMove(e){
+  const a=state.detail;if(!a)return;const cv=$('#chartCanvas');if(!cv)return;
+  const rc=cv.getBoundingClientRect(),x=e.clientX-rc.left;
+  const count=rangeCount(a),start=a.rows.length-count;
+  const xw=rc.width-CP.padL-CP.padR;
+  const i=clamp(Math.floor((x-CP.padL)/xw*count),0,count-1);
+  state.cross=start+i;drawChart();
+}
+
+/* =================== rendering dettaglio =================== */
+function scoreCard(type,a){const s=type==='short'?a.short:a.long,col=scoreColor(s.score);
+  return `<div class="card score-card">
+    <div class="score-num" style="color:${col}">${Math.round(s.score)}<span>/100</span></div>
+    <div class="score-lab">${type==='short'?'Breve periodo — giorni / settimane':'Lungo periodo — mesi / anni'}</div>
+    <div class="score-badge" style="background:${col}">${scoreLabel(s.score)}</div>
+    <div class="scorebar"><div style="width:${clamp(s.score,0,100)}%;background:${col}"></div></div></div>`;}
+function signalsList(parts){return parts.map(p=>{
+  const ic=p.s>=65?'<span class="sig ok">▲</span>':p.s<=40?'<span class="sig no">▼</span>':'<span class="sig mid">●</span>';
+  return `<div class="sigrow">${ic}<div><b>${esc(p.label)}</b> ${p.v!=null?`<span class="pill">${esc(p.v)}</span>`:''}<div class="muted small">${esc(p.txt||'')}</div></div></div>`;}).join('');}
+const row2=(k,v,cls='')=>`<div class="statrow"><span class="muted">${k}</span><span class="${cls}">${v}</span></div>`;
+function retsHTML(a){const s=a.stats;
+  return [['5 sedute',s.ret5],['1 mese',s.ret21],['3 mesi',s.ret63],['6 mesi',s.ret126],['12 mesi',s.ret252],['Anno in corso',s.ytd]]
+    .map(([k,v])=>`<div class="statrow"><span class="muted">${k}</span><span class="${v==null?'':v>=0?'up':'down'}">${fmtPct(v)}</span></div>`).join('');}
+function riskHTML(a,cur){const s=a.stats,out=[];
+  out.push(row2('Volatilità annualizzata',s.volAnn!=null?s.volAnn.toFixed(0)+'%':'—'));
+  out.push(row2('ATR (14) sul prezzo',s.atrPct!=null?s.atrPct.toFixed(2)+'%':'—'));
+  out.push(row2('Discesa massima (1 anno)',s.maxDD1y!=null?fmtPct(s.maxDD1y):'—'));
+  out.push(row2('Volumi medi (20 sedute)',s.avgVol20>0?Math.round(s.avgVol20).toLocaleString('it-IT'):'—'));
+  out.push(`<div class="statrow"><span class="muted">Posizione nel range 52 sett.</span><span><span class="posbar"><span style="left:calc(${clamp(s.pos52!=null?s.pos52:50,2,98)}% - 1px)"></span></span><span class="muted small">${s.pos52!=null?Math.round(s.pos52)+'%':''}</span></span></div>`);
+  return out.join('');}
+function levelsHTML(a,cur){const L=a.levels,c=L.c,out=[];
+  const atr=a.ind.atr[a.rows.length-1];
+  for(const r of [...L.res].sort((x,y)=>x.p-y.p))
+    out.push(row2('Resistenza',`${fmtPrice(r.p,cur)} <span class="muted small">(+${((r.p/c-1)*100).toFixed(1)}%)</span>`));
+  for(const s2 of [...L.sup].sort((x,y)=>y.p-x.p))
+    out.push(row2('Supporto',`${fmtPrice(s2.p,cur)} <span class="muted small">(${((s2.p/c-1)*100).toFixed(1)}%)</span>`));
+  let stop=null;
+  if(atr!=null)stop=c-2*atr;
+  if(L.sup.length){const s1=Math.max(...L.sup.map(x=>x.p));stop=stop!=null?Math.min(stop,s1):s1;}
+  if(stop!=null)out.push(row2('Stop indicativo',`${fmtPrice(stop,cur)} <span class="muted small">(${((stop/c-1)*100).toFixed(1)}%)</span>`,'down'));
+  return out.join('')||'<div class="muted small">Nessun livello chiaro individuato</div>';}
+
+function renderDetail(a){
+  state.detail=a;state.cross=-1;
+  const cur=a.meta.currency||'',s=a.stats;
+  const name=a.meta.longName||a.meta.shortName||'';
+  const inWl=state.watchlist.includes(a.meta.symbol);
+  $('#detail').classList.remove('hidden');
+  $('#detail').innerHTML=`
+    <div class="detail-head card">
+      <div>
+        <div class="sym-title">${esc(a.meta.symbol)} <span class="muted" style="font-weight:400;font-size:13.5px">${esc(name)}</span></div>
+        <div class="muted small" style="margin-top:3px">${esc(a.meta.exchangeName||'')} · ${esc(a.meta.instrumentType||'')} · valori in ${esc(cur)}</div>
+      </div>
+      <div class="price-block">
+        <div class="big" id="dPrice">${fmtPrice(s.price,cur)}</div>
+        <div id="dDay" class="${(s.dayPct??0)>=0?'up':'down'}">${fmtPct(s.dayPct)} oggi</div>
+        <button id="btnWatch" class="btn small" style="margin-top:8px">${inWl?'★ Nella watchlist':'☆ Aggiungi alla watchlist'}</button>
+      </div>
+    </div>
+    <div class="grid2">${scoreCard('short',a)}${scoreCard('long',a)}</div>
+    <div class="grid2">
+      <div class="card"><h3>Segnali di breve periodo</h3>${signalsList(a.short.parts)}</div>
+      <div class="card"><h3>Segnali di lungo periodo</h3>${signalsList(a.long.parts)}</div>
+    </div>
+    <div class="grid3">
+      <div class="card"><h3>Rendimenti</h3>${retsHTML(a)}</div>
+      <div class="card"><h3>Rischio</h3>${riskHTML(a,cur)}</div>
+      <div class="card"><h3>Livelli chiave</h3>${levelsHTML(a,cur)}</div>
+    </div>
+    <div class="card">
+      <div class="chart-tools">
+        ${['1M','3M','6M','1A','2A','5A'].map(r=>`<button class="btn small rng${r===state.range?' active':''}" data-range="${r}">${r}</button>`).join('')}
+        <span class="spacer"></span>
+        <label class="chk"><input type="checkbox" id="ckSMA" checked> <span style="color:#f59e0b">SMA50</span> <span style="color:#38bdf8">SMA200</span></label>
+        <label class="chk"><input type="checkbox" id="ckBB" checked> Bollinger</label>
+      </div>
+      <canvas id="chartCanvas"></canvas>
+      <div class="muted small" style="margin-top:6px">Passa il mouse sul grafico per il dettaglio di ogni sedute. Quotazioni Yahoo Finance, possibili ritardi.</div>
+    </div>`;
+  $('#btnWatch').addEventListener('click',()=>toggleWatch(a.meta.symbol));
+  $$('#detail .rng').forEach(b=>b.addEventListener('click',()=>changeRange(b.dataset.range)));
+  $('#ckSMA').addEventListener('change',drawChart);
+  $('#ckBB').addEventListener('change',drawChart);
+  const cv=$('#chartCanvas');
+  cv.addEventListener('mousemove',chartMove);
+  cv.addEventListener('mouseleave',()=>{state.cross=-1;drawChart();});
+  drawChart();
+}
+async function changeRange(r){
+  state.range=r;state.cross=-1;
+  $$('#detail .rng').forEach(b=>b.classList.toggle('active',b.dataset.range===r));
+  if(r==='5A'&&state.detail&&state.detail.rows.length<1150){
+    try{const res=await fetchChart(state.detail.meta.symbol,'5y','1d',true);renderDetail(analyze(res));return;}
+    catch(e){toast('Storico a 5 anni non disponibile');}}
+  drawChart();
+}
+async function refreshPrice(){
+  const a=state.detail;if(!a)return;const sym=a.meta.symbol;
+  try{
+    const r=await fetchChart(sym,'1d','1d',true),m=r.meta;
+    const p=m.regularMarketPrice,pc=m.chartPreviousClose??m.previousClose??null;
+    const d=pc&&p!=null?(p/pc-1)*100:null;
+    if(state.detail&&state.detail.meta.symbol===sym&&p!=null){
+      state.detail.stats.price=p;if(d!=null)state.detail.stats.dayPct=d;
+      const elP=$('#dPrice'),elD=$('#dDay');
+      if(elP)elP.textContent=fmtPrice(p,m.currency||'');
+      if(elD&&d!=null){elD.textContent=fmtPct(d)+' oggi';elD.className=d>=0?'up':'down';}}
+  }catch(e){}
+}
+function startTicker(sym){
+  if(state.ticker)clearInterval(state.ticker);
+  state.ticker=setInterval(()=>{if(state.detail&&state.detail.meta.symbol===sym)refreshPrice();else clearInterval(state.ticker);},20000);
+}
+async function openDetail(sym){
+  switchTab('analisi');pushRecent(sym);
+  $('#detail').classList.remove('hidden');
+  $('#detail').innerHTML='<div class="card muted">Caricamento dati…</div>';
+  try{
+    const res=await fetchChart(sym,'5y','1d');
+    renderDetail(analyze(res));startTicker(sym);
+  }catch(e){
+    $('#detail').innerHTML=`<div class="card"><div class="down">Impossibile caricare ${esc(sym)}.</div><div class="muted small">Controlla che il simbolo sia corretto (es. ENEL.MI, AAPL, BTC-USD), verifica la connessione e riprova.</div></div>`;}
+}
+
+/* =================== screener =================== */
+function scoreBadge(s){const c=s>=65?'ok':s>=45?'mid':'no';return `<span class="sc ${c}">${Math.round(s)}</span>`;}
+function signalText(a){const s=a.short.score,l=a.long.score;
+  if(s>=70&&l>=65)return 'Doppio favorevole: breve e lungo allineati';
+  if(s>=70)return 'Breve periodo favorevole';
+  if(l>=70)return 'Lungo periodo favorevole';
+  const r=a.ind.rsi[a.rows.length-1];
+  if(r!=null&&r<30)return 'Sovenduto: possibile rimbalzo';
+  if(s>=60)return 'Breve positivo';
+  if(l>=60)return 'Lungo positivo';
+  if(s<40&&l<40)return 'Debole su entrambi gli orizzonti';
+  if(s<40||l<40)return 'Alcune debolezze';
+  return 'Neutro';}
+function vOf(it){const d=it.d;if(!d||!d.a)return null;
+  const a=d.a,i=a.rows.length-1;
+  switch(state.sortKey){
+    case 'price':return a.stats.price;
+    case 'day':return a.stats.dayPct??null;
+    case 'short':return a.short.score;
+    case 'long':return a.long.score;
+    case 'rsi':return a.ind.rsi[i];}
+  return null;}
+function renderScreener(){
+  const tb=$('#scrTable tbody');if(!tb)return;
+  $$('#scrTable th[data-k]').forEach(th=>{
+    const base=th.dataset.base||(th.dataset.base=th.textContent);
+    th.textContent=base+(state.sortKey===th.dataset.k?(state.sortDir<0?' ▼':' ▲'):'');});
+  if(!state.watchlist.length){$('#wlEmpty').classList.remove('hidden');tb.innerHTML='';return;}
+  $('#wlEmpty').classList.add('hidden');
+  const items=state.watchlist.map(sym=>({sym,d:state.screenerData[sym]}));
+  items.sort((x,y)=>{
+    if(state.sortKey==='sym')return state.sortDir*x.sym.localeCompare(y.sym);
+    const vx=vOf(x),vy=vOf(y);
+    if(vx==null&&vy==null)return 0;if(vx==null)return 1;if(vy==null)return -1;
+    return state.sortDir*(vy-vx);});
+  tb.innerHTML=items.map(it=>{
+    const d=it.d,del=`<td><button class="del" data-sym="${esc(it.sym)}" title="Rimuovi dalla watchlist">✕</button></td>`;
+    if(!d)return `<tr data-sym="${esc(it.sym)}"><td><b>${esc(it.sym)}</b></td><td colspan="6" class="muted small">in attesa di scansione…</td>${del}</tr>`;
+    if(d.err)return `<tr data-sym="${esc(it.sym)}"><td><b>${esc(it.sym)}</b></td><td colspan="6" class="down small">dati non disponibili</td>${del}</tr>`;
+    const a=d.a,i=a.rows.length-1,r=a.ind.rsi[i];
+    return `<tr data-sym="${esc(it.sym)}">
+      <td><b>${esc(it.sym)}</b><div class="muted small">${esc((a.meta.longName||a.meta.shortName||'').slice(0,34))}</div></td>
+      <td>${fmtPrice(a.stats.price,a.meta.currency)}</td>
+      <td class="${(a.stats.dayPct??0)>=0?'up':'down'}">${fmtPct(a.stats.dayPct)}</td>
+      <td>${scoreBadge(a.short.score)}</td>
+      <td>${scoreBadge(a.long.score)}</td>
+      <td>${r!=null?r.toFixed(1):'—'}</td>
+      <td class="muted" style="text-align:left">${esc(signalText(a))}</td>
+      ${del}</tr>`;}).join('');
+  $$('#scrTable tbody tr').forEach(tr=>tr.addEventListener('click',e=>{
+    if(e.target.closest('.del'))return;openDetail(tr.dataset.sym);}));
+  $$('#scrTable .del').forEach(b=>b.addEventListener('click',e=>{
+    e.stopPropagation();
+    state.watchlist=state.watchlist.filter(s=>s!==b.dataset.sym);
+    delete state.screenerData[b.dataset.sym];
+    save('am_watchlist',state.watchlist);renderScreener();}));
+}
+function presetNames(){return Object.keys(PRESETS);}
+function addPreset(name){
+  const set=new Set(state.watchlist);(PRESETS[name]||[]).forEach(s=>set.add(s));
+  state.watchlist=[...set];save('am_watchlist',state.watchlist);
+  renderScreener();toast(`Aggiunti ${(PRESETS[name]||[]).length} simboli da "${name}"`);}
+function addBulk(){
+  const raw=$('#bulkTickers').value.trim();
+  if(!raw){toast('Incolla prima una lista di simboli');return;}
+  const syms=raw.split(/[\s,;]+/).map(s=>s.trim()).filter(s=>s.length>0);
+  if(!syms.length){toast('Nessun simbolo valido trovato');return;}
+  const set=new Set(state.watchlist),added=[];
+  for(const s of syms){
+    const t=s.toUpperCase().replace(/[^A-Z0-9.\-^=]/g,'');
+    if(t&&t.length>=2&&t.length<=20&&!set.has(t)){set.add(t);added.push(t);}}
+  const dups=syms.length-added.length;
+  state.watchlist=[...set];
+  save('am_watchlist',state.watchlist);
+  renderScreener();
+  $('#bulkTickers').value='';
+  if(added.length)toast(`${added.length} simboli aggiunti: ${added.slice(0,5).join(', ')}${added.length>5?'…':''}${dups?` (${dups} già presenti)`:''}`);
+  else toast('Nessun nuovo simbolo: erano già tutti in watchlist');
+}
+function showProgress(v){$('#scanProgress').classList.toggle('hidden',!v);}
+function updateProgress(){
+  $('#scanBar').style.width=Math.round(state.scan.done/Math.max(state.scan.total,1)*100)+'%';
+  $('#scanLabel').textContent=`${state.scan.done}/${state.scan.total}`;}
+function updateScanUI(){
+  const r=state.scan.running;
+  $('#btnScan').textContent=r?'■ Stop':'▶ Scansiona ora';
+  $('#btnScanTop').textContent=r?'■ Stop':'▶ Scansiona';
+}
+function updateScanStatus(){
+  const el=$('#scanStatus');if(!el)return;
+  if(state.scan.running){el.textContent=`Scansione in corso: ${state.scan.done}/${state.scan.total}`;return;}
+  if(!state.scan.last){el.textContent='Mai scansionata — premi "Scansiona ora"';return;}
+  let s=`Ultima scansione ${fmtTime(state.scan.last)}`;
+  if(state.settings.autoScan&&!state.scan.stopped){
+    const rem=Math.max(0,state.settings.intervalMin*60000-(Date.now()-state.scan.last));
+    s+=` · prossima tra ~${Math.max(1,Math.round(rem/60000))} min`;}
+  else if(state.scan.stopped)s+=' · scansione automatica in pausa dopo stop manuale';
+  el.textContent=s;}
+
+async function runScan(){
+  if(state.scan.running){stopRequested=true;updateScanUI();return;}
+  stopRequested=false;state.scan.stopped=false;
+  state.scan.running=true;state.scan.done=0;
+  const symbols=[...state.watchlist];
+  state.scan.total=symbols.length;
+  updateScanUI();showProgress(true);
+  let errs=0,connStop=false;
+  for(const sym of symbols){
+    if(stopRequested)break;
+    let wc=0;
+    while(searchActive>0&&wc<100){wc++;await sleep(200);}
+    if(stopRequested)break;
+    try{
+      const res=await fetchChart(sym,'2y','1d');
+      const a=analyze(res);
+      state.screenerData[sym]={a,ts:Date.now()};
+      evalAlerts(sym,a);
+      errs=0;
+    }catch(e){
+      state.screenerData[sym]={err:true,ts:Date.now()};
+      errs++;
+      if(errs>=4){
+        connStop=true;stopRequested=true;
+        toast('Connessione ai dati interrotta: scansione fermata');
+        showConnBanner();renderConn(false);
+      }
+    }
+    state.scan.done++;updateProgress();renderScreener();
+    if(stopRequested)break;
+    await sleep(state.settings.delayMs);
+  }
+  const stopped=stopRequested;
+  state.scan.running=false;state.scan.done=0;
+  if(stopped&&!connStop){
+    state.scan.stopped=true;
+    state.scan.last=Date.now();save('am_lastScan',state.scan.last);
+    toast('Scansione interrotta');
+  }else if(!stopped){
+    state.scan.last=Date.now();save('am_lastScan',state.scan.last);
+    toast('Scansione completata');
+  }
+  updateScanUI();showProgress(false);renderScreener();updateScanStatus();
+}
+function tick(){
+  if(state.settings.autoScan&&!state.scan.running&&!state.scan.stopped){
+    const iv=state.settings.intervalMin*60000;
+    if(state.scan.last&&Date.now()-state.scan.last>=iv)runScan();}
+  updateScanStatus();
+}
+
+/* =================== alert =================== */
+function meanV(rows,a,b){let s=0,c=0;for(let i=Math.max(0,a);i<b;i++){s+=rows[i].v||0;c++;}return c?s/c:0;}
+function evalAlerts(sym,a){
+  const R=state.rules,i=a.rows.length-1,c=a.rows[i].c,ind=a.ind,hits=[];
+  if(R.shortScore.on&&a.short.score>=R.shortScore.thr)
+    hits.push({k:'shortScore',lv:'buy',msg:`Punteggio breve ${Math.round(a.short.score)}/100 — ${scoreLabel(a.short.score)}`});
+  if(R.longScore.on&&a.long.score>=R.longScore.thr)
+    hits.push({k:'longScore',lv:'buy',msg:`Punteggio lungo ${Math.round(a.long.score)}/100 — ${scoreLabel(a.long.score)}`});
+  const r=ind.rsi[i];
+  if(R.rsiLow.on&&r!=null&&r<R.rsiLow.thr)
+    hits.push({k:'rsiLow',lv:'buy',msg:`RSI(14) a ${r.toFixed(1)}, sotto la soglia dei ${R.rsiLow.thr}`});
+  if(R.macdCross.on)for(let j=Math.max(1,i-2);j<=i;j++){
+    const L=ind.macd[j],S=ind.signal[j],Lp=ind.macd[j-1],Sp=ind.signal[j-1];
+    if(L!=null&&S!=null&&Lp!=null&&Sp!=null&&Lp<=Sp&&L>S){hits.push({k:'macdCross',lv:'buy',msg:'MACD ha incrociato sopra la linea di segnale'});break;}}
+  if(R.goldenCross.on)for(let j=Math.max(200,i-9);j<=i;j++){
+    const a1=ind.sma50[j-1],b1=ind.sma50[j],a2=ind.sma200[j-1],b2=ind.sma200[j];
+    if(a1!=null&&b1!=null&&a2!=null&&b2!=null&&a1<=a2&&b1>b2){hits.push({k:'goldenCross',lv:'buy',msg:'Golden cross: media 50 sopra la 200'});break;}}
+  if(R.high52.on){const prevH=Math.max(...a.rows.slice(Math.max(0,i-252),i).map(x=>x.h));
+    if(isFinite(prevH)&&c>prevH)hits.push({k:'high52',lv:'buy',msg:`Nuovo massimo 52 settimane: ${fmtPrice(c,a.meta.currency)}`});}
+  if(R.volSpike.on){const v=a.rows[i].v,vm=meanV(a.rows,i-20,i);
+    if(v&&vm>0&&v>vm*R.volSpike.mult)hits.push({k:'volSpike',lv:'info',msg:`Volumi a ${(v/vm).toFixed(1)}× la media di 20 sedute`});}
+  if(R.bbLow.on&&ind.bbL[i]!=null&&c<ind.bbL[i])
+    hits.push({k:'bbLow',lv:'buy',msg:'Prezzo sotto la banda di Bollinger inferiore'});
+  if(R.dipDay.on&&a.stats.dayPct!=null&&a.stats.dayPct<=-R.dipDay.pct)
+    hits.push({k:'dipDay',lv:'info',msg:`Caduta di ${fmtPct(a.stats.dayPct)} in giornata`});
+  let any=false;
+  for(const h of hits){
+    const key=h.k+'|'+sym,last=state.cooldown[key]||0;
+    if(Date.now()-last<R.cooldownH*3600e3)continue;
+    state.cooldown[key]=Date.now();any=true;fireAlert(sym,a,h);}
+  if(any)save('am_cooldown',state.cooldown);
+}
+function fireAlert(sym,a,h){
+  state.alerts.unshift({
+    t:Date.now(),sym,name:a.meta.longName||a.meta.shortName||sym,
+    rule:RULE_LABELS[h.k]||h.k,msg:h.msg,lv:h.lv,
+    price:a.stats.price,cur:a.meta.currency,
+    short:Math.round(a.short.score),long:Math.round(a.long.score)});
+  if(state.alerts.length>300)state.alerts.length=300;
+  save('am_alerts',state.alerts);
+  state.unread++;updateBadge();renderAlerts();
+  notify(`🔔 ${sym} — segnale`,`${h.msg} · breve ${Math.round(a.short.score)} · lungo ${Math.round(a.long.score)} · ${fmtPrice(a.stats.price,a.meta.currency)}`);
+  beep();blinkTitle();
+}
+function renderAlerts(){
+  const el=$('#alertsList');
+  if(!state.alerts.length){el.innerHTML='<div class="muted">Nessun alert per ora: appariranno qui quando le scansioni automatiche troveranno segnali.</div>';return;}
+  const groups={};
+  for(const a of state.alerts){
+    const day=new Date(a.t).toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'});
+    (groups[day]=groups[day]||[]).push(a);}
+  el.innerHTML=Object.entries(groups).map(([day,arr])=>
+    `<div class="al-day">${esc(day)}</div>`+
+    arr.map(a=>`<div class="alrow ${a.lv}"><div>
+      <b>${esc(a.sym)}</b> <span class="muted small">${esc(a.name)}</span>
+      <div class="small">${esc(a.msg)}</div>
+      <div class="muted small">${fmtTime(a.t)} · breve ${a.short}/100 · lungo ${a.long}/100</div>
+      </div><div class="al-price">${fmtPrice(a.price,a.cur)}</div></div>`).join('')).join('');
+}
+function updateBadge(){const b=$('#alertBadge');if(!b)return;
+  if(state.unread>0){b.textContent=state.unread>99?'99+':state.unread;b.classList.remove('hidden');}
+  else b.classList.add('hidden');}
+function notify(title,body){
+  if(!state.settings.notif)return;
+  if(window.Notification&&Notification.permission==='granted'){
+    try{new Notification(title,{body})}catch(e){}}}
+async function askPerm(){
+  if(!('Notification'in window)){toast('Notifiche non supportate da questo browser');return;}
+  const p=await Notification.requestPermission();
+  updatePermState();if(p==='granted'){toast('Notifiche attivate');notify('Analisi Mercati','Le notifiche sono attive: riceverai gli alert degli screener.');}}
+function updatePermState(){
+  const el=$('#permState');if(!el)return;
+  if(!('Notification'in window)){el.textContent='Notifiche non supportate: userò il registro qui sotto e il titolo della scheda.';return;}
+  const p=Notification.permission;
+  el.textContent=p==='granted'?'✓ Notifiche del browser attive.':p==='denied'?'Notifiche bloccate: sbloccale dalle impostazioni del sito nel browser.':'Notifiche non ancora attivate: clicca il pulsante.';}
+function beep(){
+  if(!state.settings.sound)return;
+  try{
+    const ctx=beep.ctx||(beep.ctx=new (window.AudioContext||window.webkitAudioContext)());
+    if(ctx.state==='suspended')ctx.resume();
+    const t=ctx.currentTime;
+    [[880,0],[1318,0.15]].forEach(([f,off])=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.frequency.value=f;o.type='sine';
+      g.gain.setValueAtTime(0.0001,t+off);
+      g.gain.exponentialRampToValueAtTime(0.12,t+off+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+off+0.16);
+      o.connect(g);g.connect(ctx.destination);
+      o.start(t+off);o.stop(t+off+0.2);});
+  }catch(e){}}
+function blinkTitle(){if(document.hidden)document.title=`🔔 (${state.unread}) Analisi Mercati`;}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)document.title=baseTitle;});
+
+/* =================== ricerca =================== */
+let searchT=null;
+function hideRes(){$('#searchRes').classList.add('hidden');}
+async function doSearch(q){
+  searchActive++;
+  try{
+    const j=await fetchJSON(`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&quotesCount=8&newsCount=0`,8000,18000);
+    const qs=(j.quotes||[]).filter(x=>x.symbol);
+    $('#searchRes').innerHTML=qs.map(x=>
+      `<div class="sres" data-sym="${esc(x.symbol)}"><b>${esc(x.symbol)}</b><span>${esc(x.shortname||'')}</span><span class="muted small">${esc(x.exchDisp||x.quoteType||'')}</span></div>`).join('')
+      ||'<div class="sres muted">Nessun risultato</div>';
+    $('#searchRes').classList.remove('hidden');
+    $$('#searchRes .sres').forEach(el=>el.addEventListener('click',()=>{hideRes();$('#searchInput').value='';openDetail(el.dataset.sym);}));
+  }catch(e){
+    $('#searchRes').innerHTML='<div class="sres muted">Errore di rete: riprova tra qualche secondo</div>';
+    $('#searchRes').classList.remove('hidden');
+  }finally{
+    searchActive--;
+  }
+}
+function pushRecent(sym){
+  state.recenti=[sym,...state.recenti.filter(s=>s!==sym)].slice(0,8);
+  save('am_recent',state.recenti);renderChips();}
+function renderChips(){
+  const el=$('#recentChips');
+  if(!state.recenti.length){el.innerHTML='';return;}
+  el.innerHTML='<span class="muted small" style="align-self:center">Recenti:</span>'+
+    state.recenti.map(s=>`<span class="chip" data-sym="${esc(s)}">${esc(s)}</span>`).join('');
+  $$('#recentChips .chip').forEach(c=>c.addEventListener('click',()=>openDetail(c.dataset.sym)));}
+
+/* =================== regole / impostazioni / backup =================== */
+function renderRules(){
+  const R=state.rules;
+  $('#rulesBox').innerHTML=RULE_DEFS.map(d=>{
+    const r=R[d.k]||{on:false};
+    const sw=`<input type="checkbox" id="rule-${d.k}" ${r.on?'checked':''}>`;
+    if(d.type==='bool')
+      return `<div class="rule">${sw}<label for="rule-${d.k}">${esc(d.label)}</label>${d.hint?`<div class="hint">${esc(d.hint)}</div>`:''}</div>`;
+    return `<div class="rule">${sw}<label for="rule-${d.k}">${esc(d.label)}</label>
+      <input type="number" id="rulev-${d.k}" value="${r[d.key]!=null?r[d.key]:d.def}" min="${d.min}" max="${d.max}" step="${d.step||1}">
+      <span class="muted small">${esc(d.suffix||'')}</span>${d.hint?`<div class="hint">${esc(d.hint)}</div>`:''}</div>`;
+  }).join('');
+  RULE_DEFS.forEach(d=>{
+    const cb=$('#rule-'+d.k);if(cb)cb.addEventListener('change',e=>{state.rules[d.k].on=e.target.checked;save('am_rules',state.rules);});
+    if(d.type==='num'){const inp=$('#rulev-'+d.k);if(inp)inp.addEventListener('change',e=>{
+      let v=parseFloat(e.target.value);if(!isFinite(v))v=d.def;
+      v=clamp(v,d.min,d.max);e.target.value=v;
+      state.rules[d.k][d.key]=v;save('am_rules',state.rules);});}});
+  $('#cooldownH').value=state.rules.cooldownH;
+  $('#cooldownH').addEventListener('change',e=>{let v=parseInt(e.target.value);if(!isFinite(v)||v<1)v=1;state.rules.cooldownH=v;save('am_rules',state.rules);});
+}
+function renderSetConn(ok){
+  const el=$('#setConn');if(!el)return;
+  el.innerHTML=ok
+    ?`<div class="up">● Collegamento attivo</div><div class="muted small">Canale dati: ${esc(PROXIES[state.proxyIdx]?PROXIES[state.proxyIdx].id:'—')} · fonte: Yahoo Finance</div>`
+    :`<div class="down">● Collegamento non riuscito</div><div class="muted small">I canali gratuiti a volte vanno in saturazione: riprova tra qualche minuto, oppure usa "Cambia canale dati".</div>`;}
+function showConnBanner(){$('#connBanner').classList.remove('hidden');}
+function hideConnBanner(){$('#connBanner').classList.add('hidden');}
+function renderConn(ok){
+  const el=$('#connStatus'),retry=$('#btnRetryConn');
+  if(ok){
+    el.innerHTML='<span class="ok">● Online</span> <span class="muted">via '+esc(PROXIES[state.proxyIdx]?PROXIES[state.proxyIdx].id:'—')+'</span>';
+    if(retry)retry.classList.add('hidden');
+  }else{
+    el.innerHTML='<span class="down">● Offline</span>';
+    if(retry)retry.classList.remove('hidden');
+  }
+}
+async function checkConnAndMaybeScan(){
+  if(connCheckRunning)return;
+  connCheckRunning=true;
+  const el=$('#connStatus');
+  el.innerHTML='<span class="muted">⏳ Verifica connessione…</span>';
+  hideConnBanner();
+  let ok=false;
+  try{ok=await warmUp(9000);}catch(e){ok=false;}
+  renderConn(ok);renderSetConn(ok);
+  if(ok){
+    if(state.settings.autoScan&&!state.scan.running&&!state.scan.stopped){
+      const iv=state.settings.intervalMin*60000;
+      if(!state.scan.last||Date.now()-state.scan.last>=iv)runScan();
+    }
+  }else{
+    showConnBanner();
+  }
+  connCheckRunning=false;
+}
+function exportCfg(){
+  const data={watchlist:state.watchlist,rules:state.rules,settings:state.settings,esportato:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='analisi-mercati-config.json';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);toast('Configurazione esportata');}
+function importCfg(e){
+  const f=e.target.files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{try{
+    const j=JSON.parse(rd.result);
+    if(Array.isArray(j.watchlist))state.watchlist=j.watchlist.filter(s=>typeof s==='string'&&s.length);
+    if(j.rules)state.rules=Object.assign(defaultRules(),j.rules);
+    if(j.settings)state.settings=Object.assign(state.settings,j.settings);
+    save('am_watchlist',state.watchlist);save('am_rules',state.rules);save('am_settings',state.settings);
+    renderRules();renderScreener();toast('Configurazione importata');
+  }catch(err){toast('File non valido');}};
+  rd.readAsText(f);e.target.value='';}
+
+/* =================== UI generale =================== */
+function switchTab(id){
+  $$('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===id));
+  $$('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+id));
+  if(id==='screener')updateScanStatus();
+  if(id==='alerts'){state.unread=0;updateBadge();}
+  if(id==='analisi')setTimeout(drawChart,60);}
+function toggleWatch(sym){
+  const i=state.watchlist.indexOf(sym);
+  if(i>=0){state.watchlist.splice(i,1);delete state.screenerData[sym];toast(sym+' rimosso dalla watchlist');}
+  else{state.watchlist.push(sym);toast(sym+' aggiunto alla watchlist');}
+  save('am_watchlist',state.watchlist);
+  const b=$('#btnWatch');
+  if(b&&state.detail&&state.detail.meta.symbol===sym)b.textContent=state.watchlist.includes(sym)?'★ Nella watchlist':'☆ Aggiungi alla watchlist';
+  renderScreener();}
+let toastT=null;
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.remove('hidden');
+  clearTimeout(toastT);toastT=setTimeout(()=>t.classList.add('hidden'),3200);}
+
+function bindUI(){
+  $$('.tab').forEach(t=>t.addEventListener('click',()=>switchTab(t.dataset.tab)));
+  $('#btnBell').addEventListener('click',()=>switchTab('alerts'));
+  $('#btnScanTop').addEventListener('click',()=>{
+    if(state.scan.running){stopRequested=true;updateScanUI();return;}
+    switchTab('screener');runScan();});
+  $('#btnScan').addEventListener('click',()=>{
+    if(state.scan.running){stopRequested=true;updateScanUI();return;}
+    runScan();});
+  $('#btnRetryConn').addEventListener('click',checkConnAndMaybeScan);
+  $('#btnRetryBanner').addEventListener('click',checkConnAndMaybeScan);
+  $('#autoScanChk').checked=state.settings.autoScan;
+  $('#autoScanChk').addEventListener('change',e=>{
+    state.settings.autoScan=e.target.checked;
+    if(!e.target.checked)state.scan.stopped=false;
+    save('am_settings',state.settings);updateScanStatus();});
+  $('#scanEvery').value=String(state.settings.intervalMin);
+  $('#scanEvery').addEventListener('change',e=>{state.settings.intervalMin=parseInt(e.target.value);save('am_settings',state.settings);updateScanStatus();});
+  const sel=$('#presetSel');
+  sel.innerHTML='<option value="">— carica preset —</option>'+presetNames().map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  $('#btnAddPreset').addEventListener('click',()=>{const v=$('#presetSel').value;if(!v){toast('Scegli prima un preset dal menu');return;}addPreset(v);});
+  $('#btnAddBulk').addEventListener('click',addBulk);
+  $('#bulkTickers').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){addBulk();}});
+  $('#btnClearWl').addEventListener('click',()=>{
+    if(!state.watchlist.length)return;
+    if(confirm('Svuotare la watchlist?')){state.watchlist=[];state.screenerData={};save('am_watchlist',state.watchlist);renderScreener();}});
+  $('#emptyPresets').innerHTML=presetNames().map(n=>`<button class="chip" data-preset="${esc(n)}">+ ${esc(n)}</button>`).join('');
+  $$('#emptyPresets .chip').forEach(b=>b.addEventListener('click',()=>addPreset(b.dataset.preset)));
+  $$('#scrTable th[data-k]').forEach(th=>th.addEventListener('click',()=>{
+    const k=th.dataset.k;
+    if(state.sortKey===k)state.sortDir*=-1;else{state.sortKey=k;state.sortDir=k==='sym'?1:-1;}
+    renderScreener();}));
+  $('#searchInput').addEventListener('input',e=>{
+    clearTimeout(searchT);const q=e.target.value.trim();
+    if(q.length<2){hideRes();return;}
+    searchT=setTimeout(()=>doSearch(q),350);});
+  $('#searchInput').addEventListener('keydown',e=>{
+    if(e.key==='Enter'){const first=$('#searchRes .sres[data-sym]');if(first){hideRes();$('#searchInput').value='';openDetail(first.dataset.sym);}}});
+  document.addEventListener('click',e=>{if(!e.target.closest('.searchwrap'))hideRes();});
+  $('#btnPerm').addEventListener('click',askPerm);
+  $('#soundChk').checked=state.settings.sound;
+  $('#soundChk').addEventListener('change',e=>{state.settings.sound=e.target.checked;save('am_settings',state.settings);});
+  $('#btnClearAlerts').addEventListener('click',()=>{state.alerts=[];state.unread=0;save('am_alerts',state.alerts);updateBadge();renderAlerts();});
+  $('#delaySel').value=String(state.settings.delayMs);
+  $('#delaySel').addEventListener('change',e=>{state.settings.delayMs=parseInt(e.target.value);save('am_settings',state.settings);});
+  $('#btnReconn').addEventListener('click',checkConnAndMaybeScan);
+  $('#btnResetProxy').addEventListener('click',()=>{state.proxyIdx=null;localStorage.removeItem('am_proxy');checkConnAndMaybeScan();});
+  $('#btnExport').addEventListener('click',exportCfg);
+  $('#impFile').addEventListener('change',importCfg);
+  $('#btnResetAll').addEventListener('click',()=>{
+    if(confirm('Azzerare watchlist, regole, cronologia e impostazioni?')){
+      ['am_watchlist','am_rules','am_alerts','am_cooldown','am_settings','am_proxy','am_recent','am_lastScan'].forEach(k=>localStorage.removeItem(k));
+      location.reload();}});
+  window.addEventListener('resize',()=>{clearTimeout(bindUI._rt);bindUI._rt=setTimeout(()=>{if(state.detail)drawChart();},200);});
+}
+
+/* =================== avvio =================== */
+async function boot(){
+  try{
+    state.watchlist=load('am_watchlist',DEFAULT_WL);
+    state.rules=Object.assign(defaultRules(),load('am_rules',{}));
+    state.alerts=load('am_alerts',[]);
+    state.cooldown=load('am_cooldown',{});
+    state.settings=Object.assign({intervalMin:15,delayMs:800,autoScan:true,sound:true,notif:true},load('am_settings',{}));
+    state.recenti=load('am_recent',[]);
+    state.scan.last=load('am_lastScan',0);
+    state.scan.stopped=false;
+    const pi=load('am_proxy',null);
+    state.proxyIdx=(typeof pi==='number'&&PROXY_ORDER.includes(pi))?pi:null;
+    bindUI();renderRules();renderAlerts();renderScreener();renderChips();
+    updateBadge();updatePermState();updateScanStatus();updateScanUI();
+    // I tick partono subito: la pagina non aspetta mai la verifica connessione
+    setInterval(tick,30000);
+    setInterval(()=>{if(state.detail)refreshPrice();},20000);
+    // Verifica connessione in background, non bloccante
+    checkConnAndMaybeScan();
+  }catch(e){
+    console.error('Errore di avvio:',e);
+    try{
+      const el=$('#connStatus');
+      if(el)el.innerHTML='<span class="down">● Errore di avvio</span>';
+      showConnBanner();
+    }catch(_){}
+  }
+}
+boot();
+</script>
+</body>
+</html>
